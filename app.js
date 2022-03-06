@@ -20,16 +20,33 @@ db.once("open", () => {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'))
 
+app.use(express.urlencoded({extended: true}));
 
 app.get('/', (req, res) => {
     res.render('home');
 })
+
+//Index Page for all Campgrounds
 app.get('/campgrounds', async (req, res) => {
     const campgrounds =  await Campground.find({});
     res.render('campgrounds/index', { campgrounds });
-})
+});
+app.get('/campgrounds/new', (req, res) => {
+    res.render('campgrounds/new')
+});
 
+app.post('/campgrounds', async (req, res) => {
+    const campground = await new Campground(req.body.campground);
+    await campground.save();
+    console.log('new Campground saved to database');
+    res.redirect(`/campgrounds/${campground._id}`)
+});
 
+//Show Page for each Campground
+app.get('/campgrounds/:id', async (req, res) => {
+    const campground = await Campground.findById(req.params.id);
+    res.render('campgrounds/show', { campground });
+});
 
 app.listen(port, () => {
     console.log(`YelCamp Server hast started on PORT: ${port}`);
