@@ -1,10 +1,12 @@
 const express = require('express');
 const app = express();
-const path = require('path')
+const path = require('path');
+const ejsMate = require('ejs-mate')
 const mongoose = require('mongoose');
 const Campground = require('./models/campground');
 const methodOverride = require('method-override');
 const {response} = require("express");
+const morgan = require('morgan');
 const port = 3000;
 
 mongoose.connect('mongodb://localhost:27017/yelp-camp', {
@@ -18,12 +20,17 @@ db.once("open", () => {
     console.log('Database connected');
 });
 
-
+app.engine('ejs', ejsMate);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'))
 
 app.use(express.urlencoded({extended: true}));
 app.use(methodOverride('_method'));
+app.use(morgan('tiny'));
+app.use((re, res, next) => {
+    const reguestTime = Date.now();
+    next();
+} )
 
 app.get('/', (req, res) => {
     res.render('home');
@@ -60,13 +67,17 @@ app.put('/campgrounds/:id', async (req, res) => {
     const { id } = req.params;
     const campground = await Campground.findByIdAndUpdate(id, {...req.body.campground});
     res.redirect(`/campgrounds/${campground._id}`)
-})
+});
 
 app.delete('/campgrounds/:id', async (req, res) => {
     const { id } = req.params;
     await Campground.findByIdAndDelete(id);
     res.redirect('/campgrounds')
-})
+});
+
+app.use((req, res) => {
+    res.status(404).send('404 - NOT FOUND!!')
+});
 
 app.listen(port, () => {
     console.log(`YelCamp Server hast started on PORT: ${port}`);
