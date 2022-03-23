@@ -7,6 +7,7 @@ const catchAsynch = require ('./utils/catchAsynch');
 const ExpressError = require('./utils/ExpressError');
 const Campground = require('./models/campground');
 const methodOverride = require('method-override');
+const Joi = require('joi');
 const {response} = require("express");
 const morgan = require('morgan');
 const port = 3000;
@@ -48,7 +49,19 @@ app.get('/campgrounds/new', (req, res) => {
 });
 
 app.post('/campgrounds', catchAsynch(async (req, res, next) => {
-    if(!req.body.campground) throw new ExpressError('Invalid Campground Data', 400);
+    //if(!req.body.campground) throw new ExpressError('Invalid Campground Data', 400);
+    const campgroundSchema = Joi.object({
+        campground: Joi.object({
+            title: Joi.string().required(),
+            price: Joi.number().required().min(0),
+        }).required()
+    })
+    const { error } = campgroundSchema.validate(req.body);
+    if(error) {
+        const msg = error.details.map(el => el.message).join(',');
+        throw new ExpressError(msg, 400);
+    }
+    console.log(result)
     const campground = await new Campground(req.body.campground);
     await campground.save();
     console.log('new Campground saved to database');
@@ -83,8 +96,9 @@ app.all('*', (req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-    const { statusCode = 500, message = 'Something went wrong!' } = err;
-    res.status(statusCode).send(message);
+    const { statusCode = 500 } = err;
+    if(!err.message) err.message = 'Something went wrong!';
+    res.status(statusCode).render('error', { err });
 });
 
 app.listen(port, () => {
