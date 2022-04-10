@@ -3,7 +3,6 @@ const app = express();
 const path = require('path');
 const ejsMate = require('ejs-mate')
 const mongoose = require('mongoose');
-const catchAsynch = require ('./utils/catchAsynch');
 const ExpressError = require('./utils/ExpressError');
 const { campgroundSchema, reviewSchema } = require('./schemas');
 const Campground = require('./models/campground');
@@ -14,6 +13,7 @@ const morgan = require('morgan');
 const port = 3000;
 
 const campgrounds = require('./routes/campgrounds');
+const reviews = require('./routes/reviews');
 
 mongoose.connect('mongodb://localhost:27017/yelp-camp', {
     useNewUrlParser:true,
@@ -38,38 +38,13 @@ app.use((re, res, next) => {
     next();
 } )
 
-const validateReview = (req, res, next) => {
-    const { error } = reviewSchema.validate(req.body);
-    if(error) {
-        const msg = error.details.map(el => el.message).join(',');
-        throw new ExpressError(msg, 400);
-    } else {
-        next();
-    }
-};
-
 app.use('/campgrounds', campgrounds);
+app.use('/campgrounds/:id/reviews', reviews);
 
 app.get('/', (req, res) => {
     res.render('home');
 })
 
-app.post('/campgrounds/:id/reviews', validateReview, catchAsynch(async (req, res) => {
-    const campground = await Campground.findById(req.params.id);
-    const review = new Review(req.body.review);
-    campground.reviews.push(review);
-    await review.save();
-    await campground.save();
-    res.redirect(`/campgrounds/${campground._id}`);
-}));
-
-app.delete('/campgrounds/:id/reviews/:reviewId', catchAsynch(async (req, res) => {
-    const {id, reviewId} = req.params;
-    await Campground.findByIdAndUpdate(id, {$pull: { rewiews: reviewId } });
-    await Review.findByIdAndDelete(reviewId);
-    res.redirect(`/campgrounds/${id}`)
-}));
-;
 app.all('*', (req, res, next) => {
     next(new ExpressError('Page not found, 404'));
 });
