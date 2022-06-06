@@ -11,6 +11,7 @@ const morgan = require('morgan');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const User = require('./models/user');
+
 const port = 3000;
 
 const userRoutes = require('./routes/user');
