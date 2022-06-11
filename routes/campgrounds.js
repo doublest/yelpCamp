@@ -1,13 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const catchAsynch = require ('../utils/catchAsynch');
-const Campground = require('../models/campground');
-const campgrounds = require('../controllers/campgrounds')
+const campgrounds = require('../controllers/campgrounds');
+const catchAsynch = require('../utils/catchAsynch');
 const { isLoggedIn, isAuthor, validateCampground } = require('../middleware');
+const multer = require('multer');
+const { storage } = require('../cloudinary');
+const upload = multer({ storage });
 
 router.route('/')
     .get(catchAsynch(campgrounds.index))
-    .post(isLoggedIn, validateCampground, catchAsynch(campgrounds.createNewCampground));
+    .post(isLoggedIn, upload.array('image'), validateCampground, catchAsynch(campgrounds.createNewCampground))
 
 router.get('/new', isLoggedIn, campgrounds.renderNewForm);
 
