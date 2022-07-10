@@ -15,6 +15,8 @@ const morgan = require('morgan');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const User = require('./models/user');
+const mongoSanitize = require('express-mongo-sanitize');
+const dbUrl = process.env.DB_URL;
 
 const port = 3000;
 
@@ -44,13 +46,16 @@ app.use((re, res, next) => {
     const requestTime = Date.now();
     next();
 });
+app.use(mongoSanitize());
 
 const sessionConfig = {
+    name: 'session',
     secret: 'secret',
     resave: false,
     saveUninitialized: true,
     cookie: {
         httpOnly: true,
+        // secure: true,
         expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
         maxAge: 1000 * 60 * 60 * 24 * 7
     }
@@ -66,7 +71,7 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 app.use((req, res, next) => {
-    console.log(req.session);
+    console.log(req.query)
     res.locals.currentUser = req.user;
     res.locals.success = req.flash('success');
     res.locals.error = req.flash('error');
