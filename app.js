@@ -11,12 +11,13 @@ const ExpressError = require('./utils/ExpressError');
 const flash = require('connect-flash');
 const methodOverride = require('method-override');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const morgan = require('morgan');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const User = require('./models/user');
 const mongoSanitize = require('express-mongo-sanitize');
-const dbUrl = process.env.DB_URL;
+const dbUrl = process.env.DB_URL || 'mongodb://localhost:27017/yelp-camp';
 
 const port = 3000;
 
@@ -24,9 +25,11 @@ const userRoutes = require('./routes/user');
 const campgroundRoutes = require('./routes/campgrounds');
 const reviewRoutes = require('./routes/reviews');
 
-mongoose.connect('mongodb://localhost:27017/yelp-camp', {
+mongoose.connect(dbUrl, {
     useNewUrlParser:true,
-    useUnifiedTopology: true
+    //useCreateIndex: true,
+    useUnifiedTopology: true,
+    //useFindAndModify: false
 });
 
 const db = mongoose.connection;
@@ -48,9 +51,24 @@ app.use((re, res, next) => {
 });
 app.use(mongoSanitize());
 
+const secret = process.env.SECRET || 'donkey';
+
+const store = MongoStore.create({
+    mongoUrl: dbUrl,
+    touchAfter: 24 * 60 * 60,
+    crypto: {
+        secret
+    }
+});
+
+store.on("error", function (e) {
+    console.log("SESSION STORE ERROR", e)
+});
+
 const sessionConfig = {
+    store,
     name: 'session',
-    secret: 'secret',
+    secret,
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -108,5 +126,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(port, () => {
-    console.log(`YelCamp Server hast started on PORT: ${port}`);
+    console.log(`YelpCamp Server hast started on PORT: ${port}`);
 })
