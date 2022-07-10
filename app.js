@@ -19,7 +19,7 @@ const User = require('./models/user');
 const mongoSanitize = require('express-mongo-sanitize');
 const dbUrl = process.env.DB_URL || 'mongodb://localhost:27017/yelp-camp';
 
-const port = 3000;
+const port = process.env.PORT || 3000 ;
 
 const userRoutes = require('./routes/user');
 const campgroundRoutes = require('./routes/campgrounds');
